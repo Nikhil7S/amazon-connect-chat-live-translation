@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Amazon Connect Chat Translation (Message Processing – PROCESSED)
+
+Parameters:
+  LambdaFunctionName:
+    Type: String
+    Default: connect-chat-translate-processor
+
+  DynamoTableName:
+    Type: String
+    Default: ConnectChatLanguageTable
+
+Resources:
+
+  ### DynamoDB ###
+  ChatLanguageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DynamoTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ContactId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ContactId
+          KeyType: HASH
+
+  ### IAM Role ###
+  ChatTranslateLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${LambdaFunctionName}-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ChatTranslatePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                Resource: !GetAtt ChatLanguageTable.Arn
+
+              - Effect: Allow
+                Action:
+                  - translate:TranslateText
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - comprehend:DetectDominantLanguage
+                Resource: "*"
+
+  ### Lambda ###
+  ChatTranslateLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaFunctionName
+      Runtime: python3.10
+      Handler: index.lambda_handler
+      Role: !GetAtt ChatTranslateLambdaRole.Arn
+      Timeout: 15
+      MemorySize: 256
+      Environment:
+        Variables:
+          LANG_TABLE: !Ref DynamoTableName
+      Code:
+        ZipFile: |
+          import boto3, os
+          translate = boto3.client('translate')
+          comprehend = boto3.client('comprehend')
+          dynamodb = boto3.resource('dynamodb')
+          table = dynamodb.Table(os.environ['LANG_TABLE'])
+
+          def lambda_handler(event, context):
+              content = event['chatContent']['content']
+              role = event['chatContent']['participantRole']
+              contact_id = event['chatContent']['initialContactId']
+
+              resp = table.get_item(Key={'ContactId': contact_id})
+              rec = resp.get('Item', {'ContactId': contact_id, 'agentLang': None, 'customerLang': None})
+
+              if role == 'CUSTOMER' and rec['customerLang'] is None:
+                  rec['customerLang'] = comprehend.detect_dominant_language(
+                      Text=content
+                  )['Languages'][0]['LanguageCode']
+
+              if role == 'AGENT' and rec['agentLang'] is None:
+                  rec['agentLang'] = comprehend.detect_dominant_language(
+                      Text=content
+                  )['Languages'][0]['LanguageCode']
+
+              table.put_item(Item=rec)
+
+              if role == 'CUSTOMER':
+                  source_lang = rec['customerLang']
+                  target_lang = rec['agentLang']
+              else:
+                  source_lang = rec['agentLang']
+                  target_lang = rec['customerLang']
+
+              if not target_lang or source_lang == target_lang:
+                  return { "status": "APPROVED" }
+
+              translated = translate.translate_text(
+                  Text=content,
+                  SourceLanguageCode=source_lang or 'auto',
+                  TargetLanguageCode=target_lang
+              )['TranslatedText']
+
+              return {
+                  "status": "PROCESSED",
+                  "result": {
+                      "processedChatContent": {
+                          "content": translated,
+                          "contentType": "text/plain"
+                      }
+                  }
+              }
+
+Outputs:
+  LambdaName:
+    Value: !Ref ChatTranslateLambda
+  DynamoTable:
+    Value: !Ref ChatLanguageTable

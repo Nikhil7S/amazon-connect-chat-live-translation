@@ -1,0 +1,167 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "42fa0ca3-ad30-4a7b-acc9-b918f3044546",
+  "Metadata": {
+    "entryPointPosition": {
+      "x": 40,
+      "y": 40
+    },
+    "ActionMetadata": {
+      "ba6fe56a-24a8-4511-a821-dfef44d0f0b5": {
+        "position": {
+          "x": 704.8,
+          "y": 66.4
+        }
+      },
+      "9411797b-7b5c-43a1-abdd-75ccd0f5ff01": {
+        "position": {
+          "x": 404,
+          "y": 55.2
+        },
+        "parameters": {
+          "QueueId": {
+            "displayName": "BasicQueue"
+          }
+        },
+        "queue": {
+          "text": "BasicQueue"
+        }
+      },
+      "3c3908c1-f865-4cec-b355-4672462d4008": {
+        "position": {
+          "x": 667.2,
+          "y": 283.2
+        }
+      },
+      "05b905bf-7f10-4bbd-8f4b-314db1a4e26e": {
+        "position": {
+          "x": 237.6,
+          "y": -35.2
+        },
+        "dynamicParams": []
+      },
+      "42fa0ca3-ad30-4a7b-acc9-b918f3044546": {
+        "position": {
+          "x": 26.4,
+          "y": 189.6
+        }
+      },
+      "7c7d1cb3-9a63-4381-ab43-0ac4bfd84a6b": {
+        "position": {
+          "x": 235.2,
+          "y": 180.8
+        },
+        "parameters": {
+          "ChatProcessor": {
+            "LambdaProcessorARN": {
+              "displayName": "chat_translate"
+            }
+          }
+        }
+      }
+    },
+    "Annotations": [],
+    "name": "chat_translate",
+    "description": "",
+    "type": "contactFlow",
+    "status": "PUBLISHED",
+    "hash": {}
+  },
+  "Actions": [
+    {
+      "Parameters": {},
+      "Identifier": "ba6fe56a-24a8-4511-a821-dfef44d0f0b5",
+      "Type": "TransferContactToQueue",
+      "Transitions": {
+        "NextAction": "3c3908c1-f865-4cec-b355-4672462d4008",
+        "Errors": [
+          {
+            "NextAction": "3c3908c1-f865-4cec-b355-4672462d4008",
+            "ErrorType": "QueueAtCapacity"
+          },
+          {
+            "NextAction": "3c3908c1-f865-4cec-b355-4672462d4008",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "QueueId": "arn:aws:connect:us-east-1:914337380587:instance/674578fa-ef97-4d65-8b47-062d5235fb8e/queue/863c1548-7bed-4a9a-97b8-00de58b676b1"
+      },
+      "Identifier": "9411797b-7b5c-43a1-abdd-75ccd0f5ff01",
+      "Type": "UpdateContactTargetQueue",
+      "Transitions": {
+        "NextAction": "ba6fe56a-24a8-4511-a821-dfef44d0f0b5",
+        "Errors": [
+          {
+            "NextAction": "3c3908c1-f865-4cec-b355-4672462d4008",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "3c3908c1-f865-4cec-b355-4672462d4008",
+      "Type": "DisconnectParticipant",
+      "Transitions": {}
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "enableTranslation": "true"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "05b905bf-7f10-4bbd-8f4b-314db1a4e26e",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "9411797b-7b5c-43a1-abdd-75ccd0f5ff01",
+        "Errors": [
+          {
+            "NextAction": "3c3908c1-f865-4cec-b355-4672462d4008",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "FlowLoggingBehavior": "Enabled"
+      },
+      "Identifier": "42fa0ca3-ad30-4a7b-acc9-b918f3044546",
+      "Type": "UpdateFlowLoggingBehavior",
+      "Transitions": {
+        "NextAction": "7c7d1cb3-9a63-4381-ab43-0ac4bfd84a6b"
+      }
+    },
+    {
+      "Parameters": {
+        "ChatProcessor": {
+          "ProcessingEnabled": "True",
+          "LambdaProcessorARN": "arn:aws:lambda:us-east-1:914337380587:function:chat_translate",
+          "ChatProcessorSettings": {
+            "DeliverUnprocessedMessages": "False"
+          }
+        }
+      },
+      "Identifier": "7c7d1cb3-9a63-4381-ab43-0ac4bfd84a6b",
+      "Type": "UpdateContactMediaProcessing",
+      "Transitions": {
+        "NextAction": "05b905bf-7f10-4bbd-8f4b-314db1a4e26e",
+        "Errors": [
+          {
+            "NextAction": "3c3908c1-f865-4cec-b355-4672462d4008",
+            "ErrorType": "NoMatchingError"
+          },
+          {
+            "NextAction": "3c3908c1-f865-4cec-b355-4672462d4008",
+            "ErrorType": "ChannelMismatch"
+          }
+        ]
+      }
+    }
+  ]
+}
