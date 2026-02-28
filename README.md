@@ -31,17 +31,18 @@ and **does not require any custom UI**.
 
 ---
 ## 📁 Repository Structure
-amazon-connect-chat-translation/
+```text`
+amazon-connect-chat-live-translation/
 ├── cloudformation/
-│ └── connect-chat-translate-cft.yaml
+│   └── connect-chat-translate-cft.yaml
 ├── lambda/
-│ └── chat_translate_lambda.py
+│   └── chat_translate_lambda.py
 ├── connect/
-│ └── chat-contact-flow.json
+│   └── chat-contact-flow.json
 ├── docs/
-│ └── architecture.png
+│   └── architecture.png
 └── README.md
-
+`
 ---
 
 ## Prerequisites
