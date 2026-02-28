@@ -30,21 +30,6 @@ and **does not require any custom UI**.
 5. Translated message is delivered in real time
 
 ---
-## 📁 Repository Structure
-```text`
-amazon-connect-chat-live-translation/
-├── cloudformation/
-│   └── connect-chat-translate-cft.yaml
-├── lambda/
-│   └── chat_translate_lambda.py
-├── connect/
-│   └── chat-contact-flow.json
-├── docs/
-│   └── architecture.png
-└── README.md
-`
----
-
 ## Prerequisites
 
 - AWS Account
